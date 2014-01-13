@@ -1,10 +1,10 @@
 from zope.interface import Interface
 
 
-class IRunner(Interface):
+class ISystem(Interface):
 
 
-    def runProcedure(self, request):
+    def runProcedure(request):
         """
         Run a procedure.
         """

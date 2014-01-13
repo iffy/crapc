@@ -1,2 +1,3 @@
 pyflakes
+mock
 -r requirements.txt
