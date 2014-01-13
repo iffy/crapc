@@ -1,0 +1,6 @@
+install:
+    - pip install -r test-requirements.txt
+
+script:
+    - trial crapc
+    - pyflakes crapc
