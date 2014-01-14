@@ -2,12 +2,12 @@ from twisted.trial.unittest import TestCase
 from twisted.internet import defer
 from zope.interface.verify import verifyObject
 
-from mock import create_autospec, MagicMock
+from mock import create_autospec
 
 from crapc.interface import ISystem
 from crapc._request import Request
 from crapc.error import MethodNotFound
-from crapc.unit import RPCSystem, RPC
+from crapc.unit import RPCSystem, RPC, _StaticValueSystem
 
 
 class RPCSystemTest(TestCase):
@@ -103,15 +103,13 @@ class RPCTest(TestCase):
         You can register subSystem fetchers by decorating them.
         """
         called = []
-        ret = MagicMock()
-        ret.runProcedure.return_value = 'ret val'
 
         class Foo(object):
             rpc = RPC()
             @rpc.subSystem('foo')
             def foo_system(self, request):
                 called.append(request)
-                return ret
+                return _StaticValueSystem('ret val')
 
         foo = Foo()
         req = Request('foo.bar')
@@ -132,15 +130,13 @@ class RPCTest(TestCase):
         non-prefixed requests.
         """
         called = []
-        ret = MagicMock()
-        ret.runProcedure.return_value = 'ret val'
 
         class Foo(object):
             rpc = RPC()
             @rpc.default
             def default(self, request):
                 called.append(request)
-                return ret
+                return _StaticValueSystem('ret val')
 
         foo = Foo()
         req = Request('foo.bar.baz')
@@ -175,19 +171,64 @@ class RPCTest(TestCase):
         """
         A subsystem factory function can return a deferred system.
         """
-        ret = MagicMock()
-        ret.runProcedure.return_value = 'ret val'
-
         class Foo(object):
             rpc = RPC()
 
             @rpc.subSystem('later')
             def later(self, request):
-                return defer.succeed(ret)
+                return defer.succeed(_StaticValueSystem('ret val'))
 
         foo = Foo()
         result = foo.rpc.runProcedure(Request('later.something'))
 
         self.assertEqual(self.successResultOf(result), 'ret val')
 
+
+    def test_prehook(self):
+        """
+        You can replace the normal subsystem-finding function with one of your
+        choosing.
+        """
+        called = []
+
+        class Foo(object):
+            rpc = RPC()
+
+            @rpc.prehook
+            def hook(self, func, request):
+                called.append(request)
+                return _StaticValueSystem('ret val')
+
+        foo = Foo()
+        req = Request('whatever.you.want')
+        result = foo.rpc.runProcedure(req)
+
+        self.assertEqual(self.successResultOf(result), 'ret val')
+        self.assertEqual(called, [req])
+
+
+    def test_prehook_continue(self):
+        """
+        You can do the normal processing by calling the included function
+        inside a prehook.
+        """
+        called = []
+
+        class Foo(object):
+            rpc = RPC()
+            @rpc.prehook
+            def hook(self, func, request):
+                called.append(request)
+                return func(request)
+
+            @rpc.default
+            def default(self, request):
+                return 'hello'
+
+        foo = Foo()
+        req = Request('something.else')
+
+        result = foo.rpc.runProcedure(req)
+        self.assertEqual(len(called), 1, "Should have called the prehook")
+        self.assertEqual(self.successResultOf(result), 'hello')
 

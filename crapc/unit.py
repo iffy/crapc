@@ -1,5 +1,6 @@
 from zope.interface import implements
 
+from functools import wraps, partial
 from weakref import WeakKeyDictionary
 
 from twisted.internet import defer
@@ -45,6 +46,19 @@ class RPCSystem(object):
 
 
 
+class _StaticValueSystem(object):
+
+    implements(ISystem)
+
+    def __init__(self, value):
+        self.value = value
+
+
+    def runProcedure(self, request):
+        return self.value
+
+
+
 class _BoundRPC(object):
 
     implements(ISystem)
@@ -56,40 +70,65 @@ class _BoundRPC(object):
 
 
     def runProcedure(self, request):
-        d = defer.maybeDeferred(self._getSystemFactory, request)
-        d.addCallback(lambda (s,r): self._callSystemFactoryWithRequest(s, r))
-        return d
+        """
+        Run the requested procedure with pre hooks.
+        """
+        return defer.maybeDeferred(self._runProcedure, request)
 
 
-    def _getSystemFactory(self, request):
-        system_factory = None
+    def _runProcedure(self, request):
+        # 1. get a factory function
+        if self.descriptor._prehook:
+            factory = partial(self.descriptor._prehook, self.instance,
+                              self._getAndRunFactory)
+        else:
+            factory = self._getFactory(request)
+
+        # 2. run the factory function to produce either a system or a final
+        # result
+        d_system = defer.maybeDeferred(factory, request)
+
+        # 3. run the system's procedure if it is a system
+        d_system.addCallback(self._maybeRunProcedureOnSystem, request)
+
+        return d_system
+
+
+    def _getFactory(self, request):
+        """
+        Get the factory function that will return an L{ISystem} responsible
+        for running the given request.
+        """
+        factory = None
 
         if '.' in request.method:
             system_name, rest = request.method.split('.', 1)
             try:
-                system_factory = self.descriptor._systems[system_name]
+                factory = partial(self.descriptor._systems[system_name],
+                                  self.instance)
             except KeyError:
                 pass
 
-        if system_factory:
-            request = request.child()
-        else:
-            system_factory = self.descriptor._default_system
+        if not factory and self.descriptor._default_system:
+            factory = partial(self.descriptor._default_system, self.instance)
 
-        if not system_factory:
-            raise MethodNotFound(request.method)
+        if not factory:
+            raise MethodNotFound(request.full_method)
 
-        return system_factory, request
+        return factory
 
 
-    def _callSystemFactoryWithRequest(self, factory, request):
-        d = defer.maybeDeferred(factory, self.instance, request)
-        d.addCallback(self._runProcedureOnSystem, request)
-        return d
+    def _getAndRunFactory(self, request):
+        return self._getFactory(request)(request)
 
 
-    def _runProcedureOnSystem(self, system, request):
-        return system.runProcedure(request)
+    def _maybeRunProcedureOnSystem(self, system_or_response, request):
+        if ISystem.providedBy(system_or_response):
+            # it's a system
+            return system_or_response.runProcedure(request)
+
+        # it's a response
+        return system_or_response
 
 
 
@@ -102,6 +141,7 @@ class RPC(object):
     def __init__(self):
         self._bound_instances = WeakKeyDictionary()
         self._systems = {}
+        self._prehook = None
         self._default_system = None
 
 
@@ -115,14 +155,28 @@ class RPC(object):
 
     def subSystem(self, system_name):
         def deco(f):
-            self._systems[system_name] = f
-            return f
+            
+            @wraps(f)
+            def subSystemWrapper(instance, request):
+                return f(instance, request.child())
+            self._systems[system_name] = subSystemWrapper
+
+            return subSystemWrapper
+
         return deco
 
 
     def default(self, f):
         self._default_system = f
         return f
+
+
+    def prehook(self, function):
+        """
+        Call C{function} instead of doing the normal subSystem lookup.
+        """
+        self._prehook = function
+
 
 
 

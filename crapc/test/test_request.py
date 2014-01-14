@@ -13,7 +13,9 @@ class RequestTest(TestCase):
         """
         r = Request('foo')
         self.assertEqual(r.method, 'foo')
+        self.assertEqual(r.full_method, 'foo')
         self.assertEqual(r.params, ())
+        self.assertEqual(r.full_params, ())
         self.assertEqual(r.id, None)
         self.assertEqual(r.context, {})
 
@@ -24,6 +26,7 @@ class RequestTest(TestCase):
         """
         r = Request('foo', {'foo': 'bar'})
         self.assertEqual(r.params, {'foo': 'bar'})
+        self.assertEqual(r.full_params, {'foo': 'bar'})
 
 
     def test_init_id(self):
@@ -73,6 +76,7 @@ class RequestTest(TestCase):
         """
         r = Request('foo.bar')
         child = r.child()
+        self.assertIdentical(r, child)
         self.assertEqual(child.method, 'bar', "Should have child method")
         r.context['foo'] = 'foo'
         self.assertEqual(child.context['foo'], 'foo', "Child should share the "
@@ -103,9 +107,10 @@ class RequestTest(TestCase):
         """
         r = Request('foo.bar', {'foo': 'bar', 'baz': 'wow'})
         child = r.stripParams(['foo'])
+        self.assertIdentical(r, child)
         self.assertEqual(child.method, 'foo.bar')
         self.assertEqual(child.params, {'baz': 'wow'})
-        self.assertEqual(r.params, {'foo': 'bar', 'baz': 'wow'},
+        self.assertEqual(r.full_params, {'foo': 'bar', 'baz': 'wow'},
                          "The original request should retain the original "
                          "parameters.")
 
