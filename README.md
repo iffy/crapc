@@ -12,7 +12,8 @@ Usage
 You can do things like this:
 
 
-    from crapc import RPC, RPCFromPublicMethods, Request
+    from crapc import RPC, RPCFromPublicMethods
+    from crapc.python import PythonInterface
 
     class Tickets(object):
 
@@ -40,3 +41,7 @@ You can do things like this:
         def tickets(self, request):
             return RPCFromPublicMethods(Tickets(self.data_store))
 
+    
+    my_rpc = MyRPC({})
+    i = PythonInterface(my_rpc.rpc)
+    i.call('tickets.create', {'name': 'bob'})
