@@ -2,6 +2,8 @@ from zope.interface import implements
 
 from weakref import WeakKeyDictionary
 
+from twisted.internet import defer
+
 from crapc.error import MethodNotFound
 from crapc.interface import ISystem
 
@@ -47,12 +49,21 @@ class _BoundRPC(object):
 
     implements(ISystem)
 
+
     def __init__(self, instance, descriptor):
         self.instance = instance
         self.descriptor = descriptor
 
+
     def runProcedure(self, request):
+        d = defer.maybeDeferred(self._getSystemFactory, request)
+        d.addCallback(lambda (s,r): self._callSystemFactoryWithRequest(s, r))
+        return d
+
+
+    def _getSystemFactory(self, request):
         system_factory = None
+
         if '.' in request.method:
             system_name, rest = request.method.split('.', 1)
             try:
@@ -68,7 +79,16 @@ class _BoundRPC(object):
         if not system_factory:
             raise MethodNotFound(request.method)
 
-        system = system_factory(self.instance, request)
+        return system_factory, request
+
+
+    def _callSystemFactoryWithRequest(self, factory, request):
+        d = defer.maybeDeferred(factory, self.instance, request)
+        d.addCallback(self._runProcedureOnSystem, request)
+        return d
+
+
+    def _runProcedureOnSystem(self, system, request):
         return system.runProcedure(request)
 
 

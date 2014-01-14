@@ -1,4 +1,5 @@
 from twisted.trial.unittest import TestCase
+from twisted.internet import defer
 from zope.interface.verify import verifyObject
 
 from mock import create_autospec, MagicMock
@@ -122,7 +123,7 @@ class RPCTest(TestCase):
         self.assertEqual(child_req.method, 'bar')
         self.assertIdentical(child_req.context, req.context)
 
-        self.assertEqual(result, 'ret val')
+        self.assertEqual(self.successResultOf(result), 'ret val')
 
 
     def test_default(self):
@@ -152,7 +153,7 @@ class RPCTest(TestCase):
                          "removed any prefix segments")
         self.assertIdentical(child_req.context, req.context)
 
-        self.assertEqual(result, 'ret val')
+        self.assertEqual(self.successResultOf(result), 'ret val')
 
 
     def test_noDefault_noSubsystem(self):
@@ -164,9 +165,29 @@ class RPCTest(TestCase):
             rpc = RPC()
 
         foo = Foo()
-        self.assertRaises(MethodNotFound, foo.rpc.runProcedure,
-                          Request('foo'))
-        self.assertRaises(MethodNotFound, foo.rpc.runProcedure,
-                          Request('foo.bar'))
+        self.assertFailure(foo.rpc.runProcedure(Request('foo')),
+                           MethodNotFound)
+        self.assertFailure(foo.rpc.runProcedure(Request('foo.bar')),
+                           MethodNotFound)
+
+
+    def test_subSystem_deferred(self):
+        """
+        A subsystem factory function can return a deferred system.
+        """
+        ret = MagicMock()
+        ret.runProcedure.return_value = 'ret val'
+
+        class Foo(object):
+            rpc = RPC()
+
+            @rpc.subSystem('later')
+            def later(self, request):
+                return defer.succeed(ret)
+
+        foo = Foo()
+        result = foo.rpc.runProcedure(Request('later.something'))
+
+        self.assertEqual(self.successResultOf(result), 'ret val')
 
 
