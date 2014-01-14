@@ -4,7 +4,7 @@ from pip.req import parse_requirements
 
 def getVersion():
     import re, os
-    r_version = re.compile(r'__version__\s=\s"(.*?)"')
+    r_version = re.compile(r'version\s=\s"(.*?)"')
     version_py = os.path.abspath(os.path.join(__file__,
                                  '../crapc/version.py'))
     return r_version.search(open(version_py, 'r').read()).groups()[0]
