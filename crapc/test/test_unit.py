@@ -114,15 +114,15 @@ class RPCTest(TestCase):
         self.assertEqual(foo.rpc, foo.rpc)
 
 
-    def test_subSystem(self):
+    def test_route(self):
         """
-        You can register subSystem fetchers by decorating them.
+        You can register route fetchers by decorating them.
         """
         called = []
 
         class Foo(object):
             rpc = RPC()
-            @rpc.subSystem('foo')
+            @rpc.route('foo')
             def foo_system(self, request):
                 called.append(request)
                 return _StaticValueSystem('ret val')
@@ -140,13 +140,13 @@ class RPCTest(TestCase):
         self.assertEqual(self.successResultOf(result), 'ret val')
 
 
-    def test_subSystem_noDot(self):
+    def test_route_noDot(self):
         """
-        subSystems can handle things without dots.
+        routes can handle things without dots.
         """
         class Foo(object):
             rpc = RPC()
-            @rpc.subSystem('foo')
+            @rpc.route('foo')
             def foo_system(self, request):
                 return 'foo ret'
 
@@ -183,9 +183,9 @@ class RPCTest(TestCase):
         self.assertEqual(self.successResultOf(result), 'ret val')
 
 
-    def test_noDefault_noSubsystem(self):
+    def test_noDefault_noroute(self):
         """
-        If there is no subsystem and no default factory, then raise
+        If there is no route and no default factory, then raise
         MethodNotFound
         """
         class Foo(object):
@@ -198,14 +198,14 @@ class RPCTest(TestCase):
                            MethodNotFound)
 
 
-    def test_subSystem_deferred(self):
+    def test_route_deferred(self):
         """
-        A subsystem factory function can return a deferred system.
+        A route factory function can return a deferred system.
         """
         class Foo(object):
             rpc = RPC()
 
-            @rpc.subSystem('later')
+            @rpc.route('later')
             def later(self, request):
                 return defer.succeed(_StaticValueSystem('ret val'))
 

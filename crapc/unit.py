@@ -91,7 +91,7 @@ class _BoundRPC(object):
         system_name = request.method.split('.')[0]
 
         try:
-            factory = partial(self.descriptor._systems[system_name],
+            factory = partial(self.descriptor._routes[system_name],
                               self.instance)
         except KeyError:
             pass
@@ -127,7 +127,7 @@ class RPC(object):
 
     def __init__(self):
         self._bound_instances = WeakKeyDictionary()
-        self._systems = {}
+        self._routes = {}
         self._prehook = None
         self._default_system = None
 
@@ -140,15 +140,15 @@ class RPC(object):
         return bound_rpc
 
 
-    def subSystem(self, system_name):
+    def route(self, system_name):
         def deco(f):
             
             @wraps(f)
-            def subSystemWrapper(instance, request):
+            def routeWrapper(instance, request):
                 return f(instance, request.child())
-            self._systems[system_name] = subSystemWrapper
+            self._routes[system_name] = routeWrapper
 
-            return subSystemWrapper
+            return routeWrapper
 
         return deco
 
@@ -160,7 +160,7 @@ class RPC(object):
 
     def prehook(self, function):
         """
-        Call C{function} instead of doing the normal subSystem lookup.
+        Call C{function} instead of doing the normal routing lookup.
         """
         self._prehook = function
 

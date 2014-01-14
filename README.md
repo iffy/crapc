@@ -4,3 +4,14 @@ crapc
 =====
 
 Yet another RPC thing.
+
+
+Usage
+=====
+
+You can do things like this:
+
+
+    from crapc.unit import RPC
+
+    class My
