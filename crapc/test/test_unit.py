@@ -1,5 +1,7 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import defer
+
+from zope.interface import implements
 from zope.interface.verify import verifyObject
 
 from mock import create_autospec
@@ -7,7 +9,21 @@ from mock import create_autospec
 from crapc.interface import ISystem
 from crapc._request import Request
 from crapc.error import MethodNotFound
-from crapc.unit import RPCSystem, RPC, _StaticValueSystem
+from crapc.unit import RPCSystem, RPC
+
+
+
+class _StaticValueSystem(object):
+
+    implements(ISystem)
+
+    def __init__(self, value):
+        self.value = value
+
+
+    def runProcedure(self, request):
+        return self.value
+
 
 
 class RPCSystemTest(TestCase):

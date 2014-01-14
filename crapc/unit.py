@@ -46,19 +46,6 @@ class RPCSystem(object):
 
 
 
-class _StaticValueSystem(object):
-
-    implements(ISystem)
-
-    def __init__(self, value):
-        self.value = value
-
-
-    def runProcedure(self, request):
-        return self.value
-
-
-
 class _BoundRPC(object):
 
     implements(ISystem)
