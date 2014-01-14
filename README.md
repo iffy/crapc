@@ -1,19 +1,19 @@
 [![Build Status](https://secure.travis-ci.org/iffy/crapc.png?branch=master)](http://travis-ci.org/iffy/crapc)
 
-crapc
-=====
+# crapc #
 
 Yet another RPC thing, with support for Twisted and JSON-RPC 2.0.
 
 
-Usage
-=====
+# Usage #
 
-You can do things like this:
+## Public methods ##
+
+You can easily expose the public methods of a class:
 
 
     from crapc import RPC, RPCFromPublicMethods
-    from crapc.python import PythonInterface
+    from crapc.helper import PythonInterface
 
     class Tickets(object):
 
@@ -42,6 +42,15 @@ You can do things like this:
             return RPCFromPublicMethods(Tickets(self.data_store))
 
     
-    my_rpc = MyRPC({})
-    i = PythonInterface(my_rpc.rpc)
-    i.call('tickets.create', {'name': 'bob'})
+    if __name__ == '__main__':
+        my_rpc = MyRPC({})
+        i = PythonInterface(my_rpc.rpc)
+        i.call('tickets.create', {'name': 'bob'})
+
+(This makes use of the `PythonInterface` which is mostly useful for
+demonstration and manual testing.)
+
+
+## JSON-RPC 2.0 ##
+
+*coming*
