@@ -140,6 +140,21 @@ class RPCTest(TestCase):
         self.assertEqual(self.successResultOf(result), 'ret val')
 
 
+    def test_subSystem_noDot(self):
+        """
+        subSystems can handle things without dots.
+        """
+        class Foo(object):
+            rpc = RPC()
+            @rpc.subSystem('foo')
+            def foo_system(self, request):
+                return 'foo ret'
+
+        foo = Foo()
+        result = foo.rpc.runProcedure(Request('foo'))
+        self.assertEqual(self.successResultOf(result), 'foo ret')
+
+
     def test_default(self):
         """
         You can register a handler to generate a system that will handle all

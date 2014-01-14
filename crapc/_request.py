@@ -16,7 +16,7 @@ class Request(object):
         Make a nearly identical L{Request} with one less segment in the
         method attribute.
         """
-        self.method = self.method.split('.',1)[1]
+        self.method = '.'.join(self.method.split('.')[1:])
         return self
 
 

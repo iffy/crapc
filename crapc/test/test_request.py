@@ -101,6 +101,12 @@ class RequestTest(TestCase):
         self.assertEqual(child.id, 10)
 
 
+    def test_child_lastSegment(self):
+        r = Request('foo')
+        r.child()
+        self.assertEqual(r.method, '')
+
+
     def test_stripParams(self):
         """
         You can make a new request object that is missing a named parameter.

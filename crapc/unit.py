@@ -88,13 +88,13 @@ class _BoundRPC(object):
         """
         factory = None
 
-        if '.' in request.method:
-            system_name, rest = request.method.split('.', 1)
-            try:
-                factory = partial(self.descriptor._systems[system_name],
-                                  self.instance)
-            except KeyError:
-                pass
+        system_name = request.method.split('.')[0]
+
+        try:
+            factory = partial(self.descriptor._systems[system_name],
+                              self.instance)
+        except KeyError:
+            pass
 
         if not factory and self.descriptor._default_system:
             factory = partial(self.descriptor._default_system, self.instance)
