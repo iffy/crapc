@@ -9,43 +9,44 @@ Yet another RPC thing, with support for Twisted and JSON-RPC 2.0.
 
 ## Public methods ##
 
-You can easily expose the public methods of a class:
+You can easily expose the public methods of a class for use in RPC systems:
+
+```python
+from crapc import RPC, RPCFromPublicMethods
+from crapc.helper import PythonInterface
+
+class Tickets(object):
+
+    def __init__(self, data_store):
+        self.data_store = data_store
+
+    def create(self, name):
+        self.data_store[name] = {}
+
+    def delete(self, name):
+        self.data_store.pop(name)
+
+    def updateCost(self, name, cost):
+        self.data_store[name]['cost'] = cost
 
 
-    from crapc import RPC, RPCFromPublicMethods
-    from crapc.helper import PythonInterface
+class MyRPC(object):
 
-    class Tickets(object):
+    rpc = RPC()
 
-        def __init__(self, data_store):
-            self.data_store = data_store
+    def __init__(self, data_store):
+        self.data_store = data_store
 
-        def create(self, name):
-            self.data_store[name] = {}
-
-        def delete(self, name):
-            self.data_store.pop(name)
-
-        def updateCost(self, name, cost):
-            self.data_store[name]['cost'] = cost
+    @rpc.route('tickets')
+    def tickets(self, request):
+        return RPCFromPublicMethods(Tickets(self.data_store))
 
 
-    class MyRPC(object):
-
-        rpc = RPC()
-
-        def __init__(self, data_store):
-            self.data_store = data_store
-
-        @rpc.route('tickets')
-        def tickets(self, request):
-            return RPCFromPublicMethods(Tickets(self.data_store))
-
-    
-    if __name__ == '__main__':
-        my_rpc = MyRPC({})
-        i = PythonInterface(my_rpc.rpc)
-        i.call('tickets.create', {'name': 'bob'})
+if __name__ == '__main__':
+    my_rpc = MyRPC({})
+    i = PythonInterface(my_rpc.rpc)
+    i.call('tickets.create', {'name': 'bob'})
+```
 
 (This makes use of the `PythonInterface` which is mostly useful for
 demonstration and manual testing.)
