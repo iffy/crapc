@@ -263,3 +263,25 @@ class RPCTest(TestCase):
         self.assertEqual(len(called), 1, "Should have called the prehook")
         self.assertEqual(self.successResultOf(result), 'hello')
 
+
+    def test_prehook_continueWithSystem(self):
+        """
+        It works to use a prehook with deferred RPCSystem results.
+        """
+        class Foo(object):
+            rpc = RPC()
+            @rpc.prehook
+            def hook(self, func, request):
+                d = defer.maybeDeferred(func, request)
+                return d.addCallback(lambda x:x+' or something')
+            
+            @rpc.route('foo')
+            def foo(self, request):
+                return _StaticValueSystem('foo')
+
+        foo = Foo()
+        req = Request('foo')
+
+        result = foo.rpc.runProcedure(req)
+        self.assertEqual(self.successResultOf(result), 'foo or something')
+

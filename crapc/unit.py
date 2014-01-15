@@ -106,7 +106,10 @@ class _BoundRPC(object):
 
 
     def _getAndRunFactory(self, request):
-        return self._getFactory(request)(request)
+        d = defer.maybeDeferred(self._getFactory, request)
+        d.addCallback(lambda func: func(request))
+        d.addCallback(self._maybeRunProcedureOnSystem, request)
+        return d
 
 
     def _maybeRunProcedureOnSystem(self, system_or_response, request):

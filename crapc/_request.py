@@ -11,6 +11,11 @@ class Request(object):
         self.context = {}
 
 
+    def __repr__(self):
+        return '<Request(%r, %r, %r) %r>' % (self.full_method, self.full_params,
+                                             self.id, self.context)
+
+
     def child(self):
         """
         Make a nearly identical L{Request} with one less segment in the
