@@ -179,13 +179,27 @@ class JsonInterfaceTest(TestCase):
         as an InternalError
         """
         def fail():
-            raise Exception()
+            raise Exception('the error')
         rpc = RPCSystem()
         rpc.addFunction('foo', fail)
 
         i = JsonInterface(rpc)
         response = self.successResultOf(run(i, 'foo'))
         self.assertEqual(response['error']['code'], InternalError.code)
+        self.assertIn('the error', response['error']['message'])
+
+
+    def test_run_params(self):
+        """
+        The parameters should be sent along too.
+        """
+        rpc = RPCSystem()
+        rpc.addFunction('sum', lambda a,b: a+b)
+
+        i = JsonInterface(rpc)
+        response = self.successResultOf(run(i, 'sum', [1, 2]))
+        self.assertEqual(response['result'], 3)
+
 
 
 

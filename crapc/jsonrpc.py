@@ -12,6 +12,10 @@ class JsonRPCError(error.RPCError):
     message = "Error"
     code = -32603
 
+    def __init__(self, message=None):
+        self.message = message or self.message
+
+
 class ParseError(JsonRPCError):
     message = "Parse error"
     code = -32700
@@ -80,9 +84,6 @@ class JsonInterface(object):
 
 
     def _runDeserialized(self, data):
-        """
-        XXX
-        """
         request_id = data['id']
 
         d = defer.maybeDeferred(self._runWithRequestID, data, request_id)
@@ -101,7 +102,9 @@ class JsonInterface(object):
         if 'method' not in data:
             raise InvalidRequest('method not provided')
 
-        d = defer.maybeDeferred(self.rpc.runProcedure, Request(data['method']))
+        req = Request(data['method'], data.get('params'))
+
+        d = defer.maybeDeferred(self.rpc.runProcedure, req)
         d.addErrback(self._mapErrors)
 
         return d
@@ -110,6 +113,6 @@ class JsonInterface(object):
     def _mapErrors(self, failure):
         if failure.check(error.MethodNotFound):
             raise MethodNotFound()
-        raise InternalError(failure.value)
+        raise InternalError(str(failure.value))
 
 
