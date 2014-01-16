@@ -95,11 +95,11 @@ curl -X POST -d '{"jsonrpc":"2.0","id":1,"method":"throw","params":[1]}' http://
 ```
 
 
-## Routing ##
+## Constructing RPCs ##
 
-You can use decorators if you want.  This includes the ability to perform
-pre-checks (with `@prehook`) and fallback (with `@default`).  Note that you
-can nest other RPCs (as is done with `Earth`):
+You can use decorators to help construct RPC systems.  This includes the
+ability to perform pre-checks (with `@prehook`) and fallback (with `@default`).
+Note that you can nest other RPCs (as is done with `Earth`):
 
 ```python
 from twisted.internet import defer, task
