@@ -91,6 +91,23 @@ class RPCSystemTest(TestCase):
         self.assertEqual(r, 'hey', "Should")
 
 
+    def test_runProcedure_nestedSystem(self):
+        """
+        You can nest systems and get to the right procedure.
+        """
+        b = RPCSystem()
+        a = RPCSystem()
+        root = RPCSystem()
+
+        root.addSystem('a', a)
+        a.addSystem('b', b)
+        b.addFunction('func', lambda x:x+'funk')
+
+        req = Request('a.b.func', ['turn up the '])
+        result = root.runProcedure(req)
+        self.assertEqual(result, 'turn up the funk')
+
+
 
 class RPCTest(TestCase):
 

@@ -16,7 +16,6 @@ class RequestTest(TestCase):
         self.assertEqual(r.full_method, 'foo')
         self.assertEqual(r.params, ())
         self.assertEqual(r.full_params, ())
-        self.assertEqual(r.id, None)
         self.assertEqual(r.context, {})
 
 
@@ -27,14 +26,6 @@ class RequestTest(TestCase):
         r = Request('foo', {'foo': 'bar'})
         self.assertEqual(r.params, {'foo': 'bar'})
         self.assertEqual(r.full_params, {'foo': 'bar'})
-
-
-    def test_init_id(self):
-        """
-        You can initialize with an id
-        """
-        r = Request('foo', id=10)
-        self.assertEqual(r.id, 10)
 
 
     def test_args_dict(self):
@@ -92,15 +83,6 @@ class RequestTest(TestCase):
         self.assertEqual(child.params, {'a': 'apple'})
 
 
-    def test_child_id(self):
-        """
-        Children should inherit the parent's id
-        """
-        r = Request('foo.bar', id=10)
-        child = r.child()
-        self.assertEqual(child.id, 10)
-
-
     def test_child_lastSegment(self):
         r = Request('foo')
         r.child()
@@ -123,14 +105,5 @@ class RequestTest(TestCase):
         r.context['foo'] = 'foo'
         self.assertEqual(child.context['foo'], 'foo', "The context should "
                          "be shared among the requests")
-
-
-    def test_stripParams_id(self):
-        """
-        Children should inherit the parent id
-        """
-        r = Request('foo.bar', id=12)
-        child = r.stripParams([])
-        self.assertEqual(child.id, 12)
 
         

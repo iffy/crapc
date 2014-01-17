@@ -2,12 +2,16 @@
 
 
 class Request(object):
+    """
+    This is a single RPC request.
+
+    @ivar method: The method being looked for.
+    """
 
 
-    def __init__(self, method, params=None, id=None):
+    def __init__(self, method, params=None):
         self.full_method = self.method = method
         self.full_params = self.params = params or ()
-        self.id = id
         self.context = {}
 
 
