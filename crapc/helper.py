@@ -11,6 +11,8 @@ from crapc._request import Request
 def RPCFromPublicMethods(obj):
     """
     Create an L{ISystem} from the public methods on this object.
+
+    @return: An L{crapc.unit.RPCSystem} instance.
     """
     rpc = RPCSystem()
     methods = inspect.getmembers(obj, inspect.ismethod)
@@ -24,7 +26,10 @@ def RPCFromPublicMethods(obj):
 
 
 class PythonInterface(object):
-
+    """
+    An in-memory interface to an L{ISystem}.
+    Just read (all 2 lines of) the source.
+    """
 
     def __init__(self, rpc):
         self.rpc = rpc

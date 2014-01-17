@@ -160,7 +160,38 @@ class _BoundRPC(object):
 
 class RPC(object):
     """
-    Descriptor interface for RPC routing.
+    Descriptor interface for creating an RPC system (or L{ISystem}).  Use it
+    like this::
+
+        class MyRPC(object):
+
+            rpc = RPC()
+
+            @rpc.route('foo')
+            def foo(self, request):
+                return 'result of foo'
+
+            @rpc.prehook
+            def emphasize(self, func, request):
+                result = defer.maybeDeferred(func, request)
+                return result.addCallback(lambda x:x+'!')
+
+            @rpc.default
+            def default(self, request):
+                return 'no such method'
+
+    You may also return other L{ISystem} objects, such as::
+
+        class OtherRPC(object):
+
+            rpc = RPC()
+
+            @rpc.route('earth')
+            def earth(self, request):
+                earth = RPCSystem()
+                earth.addFunction('spin', lambda: 'earth spun')
+                earth.addFunction('orbit', lambda: 'dizzy')
+                return earth
     """
 
 
@@ -180,6 +211,10 @@ class RPC(object):
 
 
     def route(self, system_name):
+        """
+        Route to a function, L{ISystem} or return value for the given
+        procedure name.
+        """
         def deco(f):
             
             @wraps(f)
@@ -193,6 +228,9 @@ class RPC(object):
 
 
     def default(self, f):
+        """
+        Fallback if the desired method isn't found anywhere else.
+        """
         self._default_system = f
         return f
 
@@ -200,6 +238,26 @@ class RPC(object):
     def prehook(self, function):
         """
         Call C{function} instead of doing the normal routing lookup.
+        
+        C{function} will be called with two arguments
+        C{(continue_func, request)}.
+        C{continue_func} is a continuation function
+        that will do what would have been done if
+        there were no prehook.
+
+        So C{Foo} and C{Bar} in this example will behave identically::
+
+            class Foo(object):
+
+                rpc = RPC()
+                
+                @rpc.prehook
+                def prehook(self, func, request):
+                    return func(request)
+
+            class Bar(object):
+
+                rpc = RPC()
         """
         self._prehook = function
 
