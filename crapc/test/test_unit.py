@@ -302,3 +302,22 @@ class RPCTest(TestCase):
         result = foo.rpc.runProcedure(req)
         self.assertEqual(self.successResultOf(result), 'foo or something')
 
+
+    def test_sub_sub_sub_system(self):
+        """
+        As many L{ISystem} instances as are returned should be evaluated.
+        """
+        class Foo(object):
+            rpc = RPC()
+            @rpc.route('foo')
+            def foo(self, request):
+                return _StaticValueSystem(
+                       _StaticValueSystem(
+                       _StaticValueSystem(
+                       _StaticValueSystem('foo'))))
+
+        foo = Foo()
+        req = Request('foo')
+
+        result = foo.rpc.runProcedure(req)
+        self.assertEqual(self.successResultOf(result), 'foo')

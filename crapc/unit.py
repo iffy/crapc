@@ -11,6 +11,16 @@ from crapc.interface import ISystem
 
 
 class RPCSystem(object):
+    """
+    This is a collection of named functions and subsystems.
+    This is a building block for general purpose RPC.
+
+    Add functions with L{addFunction}.
+    Add more L{ISystem} instances with L{addSystem}.
+    
+    Then execute procedures by passing L{crapc._request.Request} instances
+    to L{runProcedure}.
+    """
 
     implements(ISystem)
 
@@ -20,6 +30,15 @@ class RPCSystem(object):
 
 
     def runProcedure(self, request):
+        """
+        Find and run the procedure identified by C{request}.
+
+        @param request: A L{crapc._request.Request} instance.
+
+        @raise MethodNotFound: If the method named could not be found.
+
+        @return: Whatever the procedure returns.
+        """
         # look for a subsystem
         if '.' in request.method:
             system_name, rest = request.method.split('.', 1)
@@ -38,10 +57,22 @@ class RPCSystem(object):
 
 
     def addFunction(self, name, func):
+        """
+        Add a function to this system.
+
+        @param name: Name of function.
+        @param func: Function to be called.
+        """
         self._functions[name] = func
 
 
     def addSystem(self, name, system):
+        """
+        Add a subsystem to this system.
+
+        @param name: Name of system.
+        @param system: A L{ISystem}-providing instance.
+        """
         self._systems[name] = system
 
 
@@ -59,6 +90,8 @@ class _BoundRPC(object):
     def runProcedure(self, request):
         """
         Run the requested procedure with pre hooks.
+
+        @rtype: C{Deferred}
         """
         return defer.maybeDeferred(self._runProcedure, request)
 
@@ -84,7 +117,9 @@ class _BoundRPC(object):
     def _getFactory(self, request):
         """
         Get the factory function that will return an L{ISystem} responsible
-        for running the given request.
+        for running the given request.  A factory function is a function that
+        accepts a L{Request} instance and returns either a procedure's end
+        result or else an L{ISystem}.
         """
         factory = None
 
@@ -115,7 +150,8 @@ class _BoundRPC(object):
     def _maybeRunProcedureOnSystem(self, system_or_response, request):
         if ISystem.providedBy(system_or_response):
             # it's a system
-            return system_or_response.runProcedure(request)
+            d = defer.maybeDeferred(system_or_response.runProcedure, request)
+            return d.addCallback(self._maybeRunProcedureOnSystem, request)
 
         # it's a response
         return system_or_response
