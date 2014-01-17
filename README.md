@@ -9,11 +9,11 @@ Yet another RPC thing, with support for Twisted and JSON-RPC 2.0.
 
 ## Public methods ##
 
-You can easily expose the public methods of any class for use in RPC systems
-using `RPCFromObject`:
+You can easily expose the public methods of any instance for use in RPC systems
+using `RPCFromObject` or `RPCFromClass`:
 
 ```python
-from crapc import RPCFromObject
+from crapc import RPCFromObject, RPCFromClass
 
 class Tickets(object):
 
@@ -29,12 +29,24 @@ class Tickets(object):
     def updateCost(self, name, cost):
         self.data_store[name]['cost'] = cost
 
+# This is a class with the same __init__ as Tickets but instantiates RPC-ready
+# objects
+RPCTickets = RPCFromClass(Tickets)
+
 
 if __name__ == '__main__':
     from crapc.helper import PythonInterface
+
+    # from object
     tickets = RPCFromObject(Tickets({}))
     i = PythonInterface(tickets)
-    i.call('create', {'name': 'bob'})
+    i.call('create', name='bob')
+
+    # from class
+    tickets2 = RPCTickets({})
+    i = PythonInterface(tickets2)
+    i.call('create', name='bilbo')
+    print tickets2.original.data_store
 ```
 
 (This makes use of the `PythonInterface` which is mostly useful for
