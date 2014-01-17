@@ -106,6 +106,27 @@ curl -X POST -d '{"jsonrpc":"2.0","id":1,"method":"kick", "params":{"distance":3
 curl -X POST -d '{"jsonrpc":"2.0","id":1,"method":"throw","params":[1]}' http://127.0.0.1:8080/rpc
 ```
 
+## Willy-nilly ##
+
+You can build up an RPC system in memory at runtime:
+
+```python
+from crapc.helper import PythonInterface
+from crapc.unit import RPCSystem
+
+system = RPCSystem()
+system.addFunction('emphasize', lambda x: '*'+x+'*')
+
+sub_system = RPCSystem()
+sub_system.addFunction('hello', lambda: 'world')
+
+system.addSystem('sub', sub_system)
+
+py = PythonInterface(system)
+print py.call('sub.hello')
+print py.call('emphasize', 'yelling')
+```
+
 
 ## Constructing RPCs ##
 
@@ -180,9 +201,12 @@ you can dream up.
 - Composition is used instead of inheritance.  (So your code doesn't have to
   import and use RPC-specific stuff all over).
 
-- Only JSON-RPC version 2 is supported.
+- Only JSON-RPC version 2 is supported.  Supporting prior versions is not
+  expected.
 
-- Batch operations are not supported.
+- Batch operations are not yet supported.
+
+- Notifications are not yet supported.
 
 - [txJSON-RPC](https://github.com/oubiwann/txjsonrpc) - I wrote this thinking
   txJSON-RPC didn't support v2.0, but apparently it does ... perhaps the good
