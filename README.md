@@ -10,10 +10,10 @@ Yet another RPC thing, with support for Twisted and JSON-RPC 2.0.
 ## Public methods ##
 
 You can easily expose the public methods of any class for use in RPC systems
-using `RPCFromPublicMethods`:
+using `RPCFromObject`:
 
 ```python
-from crapc import RPCFromPublicMethods
+from crapc import RPCFromObject
 
 class Tickets(object):
 
@@ -32,7 +32,7 @@ class Tickets(object):
 
 if __name__ == '__main__':
     from crapc.helper import PythonInterface
-    tickets = RPCFromPublicMethods(Tickets({}))
+    tickets = RPCFromObject(Tickets({}))
     i = PythonInterface(tickets)
     i.call('create', {'name': 'bob'})
 ```
@@ -49,7 +49,7 @@ Here's an example using [klein](http://github.com/twisted/klein)
 POST requests:
 
 ```python
-from crapc import RPCFromPublicMethods
+from crapc import RPCFromObject
 from crapc.jsonrpc import JsonInterface
 
 from klein import Klein
@@ -73,7 +73,7 @@ class BallsApp(object):
     app = Klein()
 
     def __init__(self):
-        rpc = RPCFromPublicMethods(Balls())
+        rpc = RPCFromObject(Balls())
         self.json_interface = JsonInterface(rpc)
 
     @app.route('/rpc', methods=['POST'])
