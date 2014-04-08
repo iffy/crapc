@@ -63,11 +63,12 @@ class JsonInterface(object):
 
     def _makeErrorResponse(self, failure, request_id):
         exc = failure.value
+        code = getattr(exc, 'code', InternalError.code)
         return {
             'jsonrpc': '2.0',
             'id': request_id,
             'error': {
-                'code': exc.code,
+                'code': code,
                 'message': exc.message,
             },
         }

@@ -132,6 +132,20 @@ class JsonInterfaceTest(TestCase):
         self.assertEqual(result['id'], None)
 
 
+    def test_makeErrorResponse_noCode(self):
+        """
+        If no code is given, use InternalError.code
+        """
+        i = JsonInterface(None)
+        exc = Exception()
+        exc.message = 'Some message'
+
+        result = i._makeErrorResponse(Failure(exc), None)
+        self.assertEqual(result['id'], None)
+        self.assertEqual(result['error']['code'], InternalError.code)
+        self.assertEqual(result['error']['message'], 'Some message')
+
+
     def test_run_MethodNotFound(self):
         """
         If the method is not found, make sure the right code and message are
