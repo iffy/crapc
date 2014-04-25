@@ -30,6 +30,7 @@ class RPCFromObjectTest(TestCase):
         but not private ones.
         """
         rpc = RPCFromObject(Something())
+        verifyObject(ISystem, rpc)
         self.assertEqual(rpc.runProcedure(Request('proc1', ['a'])), 'apples')
         self.assertEqual(rpc.runProcedure(Request('proc2', ['b'])), 'bananas')
         self.assertRaises(MethodNotFound, rpc.runProcedure,
