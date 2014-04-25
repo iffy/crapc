@@ -8,24 +8,39 @@ from zope.interface import implements
 
 from crapc.error import MethodNotFound
 from crapc.interface import ISystem
-from crapc.unit import RPCSystem
 from crapc._request import Request
+
+
+class _LazyWrappingRPCSystem(object):
+    """
+    Create an L{ISystem} from the public methods of an object that are looked
+    up lazily.
+    """
+
+    implements(ISystem)
+
+    def __init__(self, original):
+        self.original = original
+
+
+    def runProcedure(self, request):
+        try:
+            func = getattr(self.original, request.method)
+            if inspect.ismethod(func) and not request.method.startswith('_'):
+                return func(*request.args(), **request.kwargs())
+            else:
+                raise MethodNotFound(request.method)
+        except AttributeError:
+            raise MethodNotFound(request.method)
 
 
 def RPCFromObject(obj):
     """
     Create an L{ISystem} from the public methods on this object.
 
-    @return: An L{crapc.unit.RPCSystem} instance.
+    @return: An L{ISystem}-implementing instance.
     """
-    rpc = RPCSystem()
-    methods = inspect.getmembers(obj, inspect.ismethod)
-    for name, value in methods:
-        # exclude private methods
-        if name.startswith('_'):
-            continue
-        rpc.addFunction(name, value)
-    return rpc
+    return _LazyWrappingRPCSystem(obj)
 
 
 
