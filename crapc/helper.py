@@ -24,9 +24,11 @@ class _LazyWrappingRPCSystem(object):
 
 
     def runProcedure(self, request):
+        if request.method.startswith('_'):
+            raise MethodNotFound(request.method)
         try:
             func = getattr(self.original, request.method)
-            if inspect.ismethod(func) and not request.method.startswith('_'):
+            if inspect.ismethod(func) or inspect.isfunction(func):
                 return func(*request.args(), **request.kwargs())
             else:
                 raise MethodNotFound(request.method)
