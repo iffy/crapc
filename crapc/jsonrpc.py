@@ -9,31 +9,27 @@ from crapc import error
 
 
 class JsonRPCError(error.RPCError):
-    message = "Error"
+    public_message = "Error"
     code = -32603
 
-    def __init__(self, message=None):
-        self.message = message or self.message
-
-
 class ParseError(JsonRPCError):
-    message = "Parse error"
+    public_message = "Parse error"
     code = -32700
 
 class InvalidRequest(JsonRPCError):
-    message = "Invalid request"
+    public_message = "Invalid request"
     code = -32600
 
 class MethodNotFound(JsonRPCError):
-    message = "Method not found"
+    public_message = "Method not found"
     code = -32601
 
 class InvalidParams(JsonRPCError):
-    message = "Invalid parameters"
+    public_message = "Invalid parameters"
     code = -32602
 
 class InternalError(JsonRPCError):
-    message = "Internal error"
+    public_message = "Internal error"
     code = -32603
 
 
@@ -41,10 +37,16 @@ class InternalError(JsonRPCError):
 class JsonInterface(object):
 
 
-    def __init__(self, rpc, serialize=None, deserialize=None):
+    def __init__(self, rpc, serialize=None, deserialize=None,
+                 logError=None):
+        """
+        @param logError: Function that will be called with Failure instances
+            when they happen.
+        """
         self.rpc = rpc
         self._serialize = serialize or json.dumps
         self._deserialize_fn = deserialize or json.loads
+        self._logError = logError or (lambda x:None)
 
 
     def _deserialize(self, json_string):
@@ -62,6 +64,11 @@ class JsonInterface(object):
 
 
     def _makeErrorResponse(self, failure, request_id):
+        logging_message = ''
+        try:
+            self._logError(failure)
+        except:
+            logging_message = ' (Logging failed)'
         exc = failure.value
         code = getattr(exc, 'code', InternalError.code)
         return {
@@ -69,7 +76,7 @@ class JsonInterface(object):
             'id': request_id,
             'error': {
                 'code': code,
-                'message': exc.message,
+                'message': '%s%s' % (exc.public_message, logging_message),
             },
         }
 
@@ -114,6 +121,5 @@ class JsonInterface(object):
     def _mapErrors(self, failure):
         if failure.check(error.MethodNotFound):
             raise MethodNotFound()
-        raise InternalError(str(failure.value))
-
+        raise InternalError(failure.value)
 

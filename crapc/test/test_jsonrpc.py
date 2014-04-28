@@ -109,7 +109,7 @@ class JsonInterfaceTest(TestCase):
         i = JsonInterface(None)
         exc = Exception()
         exc.code = 12344
-        exc.message = 'Some message'
+        exc.public_message = 'Some message'
 
         result = i._makeErrorResponse(Failure(exc), 13)
         self.assertEqual(result['jsonrpc'], '2.0', "Errors should include the "
@@ -126,7 +126,7 @@ class JsonInterfaceTest(TestCase):
         i = JsonInterface(None)
         exc = Exception()
         exc.code = 12344
-        exc.message = 'Some message'
+        exc.public_message = 'Some message'
 
         result = i._makeErrorResponse(Failure(exc), None)
         self.assertEqual(result['id'], None)
@@ -138,7 +138,7 @@ class JsonInterfaceTest(TestCase):
         """
         i = JsonInterface(None)
         exc = Exception()
-        exc.message = 'Some message'
+        exc.public_message = 'Some message'
 
         result = i._makeErrorResponse(Failure(exc), None)
         self.assertEqual(result['id'], None)
@@ -200,7 +200,39 @@ class JsonInterfaceTest(TestCase):
         i = JsonInterface(rpc)
         response = self.successResultOf(run(i, 'foo'))
         self.assertEqual(response['error']['code'], InternalError.code)
-        self.assertIn('the error', response['error']['message'])
+        self.assertNotIn('the error', response['error']['message'])
+
+
+    def test_logError(self):
+        """
+        Errors can be logged.
+        """
+        def fail():
+            raise Exception('the error')
+        rpc = RPCSystem()
+        rpc.addFunction('foo', fail)
+
+        errors = []
+
+        i = JsonInterface(rpc, logError=errors.append)
+        self.successResultOf(run(i, 'foo'))
+        exc = errors[0]
+        self.assertIn('the error', str(exc.getTraceback()))
+
+
+    def test_logError_fails(self):
+        """
+        If logError fails, don't fail the whole thing.
+        """
+        def fail():
+            raise Exception('the error')
+        rpc = RPCSystem()
+        rpc.addFunction('foo', fail)
+
+        i = JsonInterface(rpc, logError='foo')
+        response = self.successResultOf(run(i, 'foo'))
+        self.assertIn('log', response['error']['message'].lower(),
+                      "Should indicate something about logging failing")
 
 
     def test_run_params(self):
