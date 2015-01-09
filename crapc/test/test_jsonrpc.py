@@ -35,17 +35,25 @@ class ErrorsTest(TestCase):
         self.assertEqual(InternalError.code, -32603)
 
 
+def mkRequest(method, params=None, id=None):
+    """
+    Make a request object.
+    """
+    request = {
+        'jsonrpc': '2.0',
+        'id': id or 123,
+        'method': method,
+    }
+    if params is not None:
+        request['params'] = params
+    return request
+
+
 def run(interface, method, params=None):
     """
     Run a method on an interface
     """
-    data = {
-        'jsonrpc': '2.0',
-        'id': 123,
-        'method': method,
-    }
-    if params is not None:
-        data['params'] = params
+    data = mkRequest(method, params, id=123)
     d = interface.run(json.dumps(data))
     d.addCallback(json.loads)
     return d
@@ -167,6 +175,34 @@ class JsonInterfaceTest(TestCase):
         self.assertEqual(response['error']['code'], ParseError.code)
 
 
+    def test_run_notAListOrDict(self):
+        """
+        If it's valid JSON, but not a list or a dict, fail with InvalidRequest
+        """
+        # True, None, False, integer, string
+        i = JsonInterface(RPCSystem())
+        
+        r = i.run('true')
+        response = json.loads(self.successResultOf(r))
+        self.assertEqual(response['error']['code'], InvalidRequest.code)
+
+        r = i.run('false')
+        response = json.loads(self.successResultOf(r))
+        self.assertEqual(response['error']['code'], InvalidRequest.code)
+
+        r = i.run('null')
+        response = json.loads(self.successResultOf(r))
+        self.assertEqual(response['error']['code'], InvalidRequest.code)
+
+        r = i.run('5')
+        response = json.loads(self.successResultOf(r))
+        self.assertEqual(response['error']['code'], InvalidRequest.code)
+
+        r = i.run('"hey"')
+        response = json.loads(self.successResultOf(r))
+        self.assertEqual(response['error']['code'], InvalidRequest.code)
+
+
     def test_run_InvalidRequest_noVersion(self):
         """
         It is an invalid request to omit the "jsonrpc": "2.0" item.
@@ -247,7 +283,73 @@ class JsonInterfaceTest(TestCase):
         self.assertEqual(response['result'], 3)
 
 
+    def test_run_batch(self):
+        """
+        You can submit multiple requests at once.
+        """
+        rpc = RPCSystem()
+        rpc.addFunction('hello', lambda x: 'hello, ' + x)
+        i = JsonInterface(rpc)
+
+        payload = json.dumps([
+            mkRequest('hello', {'x': 'world'}, id=1),
+            mkRequest('hello', {'x': 'guys'}, id=2),
+        ])
+
+        result = self.successResultOf(i.run(payload))
+        result = json.loads(result)
+        self.assertEqual(len(result), 2, "Should return two responses: %r" % (
+            result,))
+
+        response1 = [x for x in result if x['id'] == 1][0]
+        self.assertEqual(response1['result'], 'hello, world')
+
+        response2 = [x for x in result if x['id'] == 2][0]
+        self.assertEqual(response2['result'], 'hello, guys')
 
 
+    def test_run_batch_someErrors(self):
+        """
+        If there are errors with some calls, that should not fail the successful
+        calls.
+        """
+        def fail():
+            raise Exception('the error')
+        rpc = RPCSystem()
+        rpc.addFunction('err', fail)
+        rpc.addFunction('sum', lambda a,b: a+b)
+        i = JsonInterface(rpc)
+
+        payload = json.dumps([
+            mkRequest('err', id=1),
+            mkRequest('sum', [1, 2], id=2),
+        ])
+        
+        result = self.successResultOf(i.run(payload))
+        result = json.loads(result)
+
+        self.assertEqual(len(result), 2, "Should return two responses: %r" % (
+            result,))
+
+        response1 = [x for x in result if x['id'] == 1][0]
+        self.assertIn('error', response1, "Should be an error")
+
+        response2 = [x for x in result if x['id'] == 2][0]
+        self.assertEqual(response2['result'], 3)
+
+
+    def test_run_batch_noRequests(self):
+        """
+        If there are no requests within the array, return a single error.
+        """
+        rpc = RPCSystem()
+        i = JsonInterface(rpc)
+
+        payload = json.dumps([])
+        
+        result = self.successResultOf(i.run(payload))
+        result = json.loads(result)
+        self.assertIn('error', result, "Should return a single error object "
+            "as per the spec: %r" % (result,))
 
 
