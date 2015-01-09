@@ -63,7 +63,7 @@ class JsonInterface(object):
         }
 
 
-    def _makeErrorResponse(self, failure, request_id):
+    def _makeErrorResponse(self, failure, request_id=None):
         logging_message = ''
         try:
             self._logError(failure)
@@ -83,12 +83,37 @@ class JsonInterface(object):
 
     def run(self, json_string):
         d = self._deserialize(json_string)
-        
-        d.addCallback(self._runDeserialized)
-        d.addErrback(self._makeErrorResponse, None)
-        
+        d.addCallback(self._forkBatch)
+        d.addErrback(self._makeErrorResponse)
         d.addCallback(self._serialize)
         return d
+
+
+    def _runSingleRequest(self, request):
+        """
+        Run a single request.
+        """
+        d = defer.maybeDeferred(self._runDeserialized, request)
+        d.addErrback(self._makeErrorResponse)
+        return d
+
+
+    def _forkBatch(self, data):
+        """
+        If data is a list, make several calls.  If it's a dict, just make one.
+        """
+        if isinstance(data, dict):
+            # single
+            return self._runSingleRequest(data)
+        elif data and isinstance(data, list):
+            # multiple
+            dlist = []
+            for item in data:
+                dlist.append(self._runSingleRequest(item))
+            return defer.gatherResults(dlist)
+        else:
+            # no requests
+            raise InvalidRequest("empty request")
 
 
     def _runDeserialized(self, data):

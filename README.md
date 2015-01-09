@@ -106,6 +106,12 @@ curl -X POST -d '{"jsonrpc":"2.0","id":1,"method":"kick", "params":{"distance":3
 curl -X POST -d '{"jsonrpc":"2.0","id":1,"method":"throw","params":[1]}' http://127.0.0.1:8080/rpc
 ```
 
+You can even do [batch requests](http://www.jsonrpc.org/specification#batch):
+
+```bash
+curl -X POST -d '[{"jsonrpc":"2.0","id":1,"method":"kick"},{"jsonrpc":"2.0","id":2,"method":"kick"}]' http://127.0.0.1:8080/rpc
+```
+
 ## Willy-nilly ##
 
 You can build up an RPC system in memory at runtime:
@@ -203,8 +209,6 @@ you can dream up.
 
 - Only JSON-RPC version 2 is supported.  Supporting prior versions is not
   expected.
-
-- Batch operations are not yet supported.
 
 - Notifications are not yet supported.
 
